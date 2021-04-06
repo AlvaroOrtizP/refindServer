@@ -5,17 +5,24 @@
  */
 package refindserver;
 
+import Controlador.RefindCAD;
+import POJOS.ExcepcionRefind;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author Alvaro
  */
-public class RefindServer {
+public class IniciarServidor {
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        // TODO code application logic here
+        Thread servidor = new Servidor();
+        servidor.start();
+
     }
-    
+
 }
