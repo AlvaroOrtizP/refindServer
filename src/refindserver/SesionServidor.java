@@ -8,6 +8,7 @@ package refindserver;
 import Controlador.RefindCAD;
 import POJOS.Anuncio;
 import POJOS.Categoria;
+import POJOS.Comentario;
 import POJOS.ExcepcionRefind;
 import POJOS.Indicador;
 import POJOS.Usuario;
@@ -32,6 +33,7 @@ public class SesionServidor extends Thread {
     String respuesta = "OK";
     ArrayList<Anuncio> listaAnuncios = new ArrayList<>();
     ArrayList<Categoria> listaCategorias = new ArrayList<>();
+    ArrayList<Comentario> listaComentarios = new ArrayList<>();
 
     public SesionServidor(Socket clienteConectado) {
         this.clienteConectado = clienteConectado;
@@ -44,13 +46,14 @@ public class SesionServidor extends Thread {
     public void run() {
         Usuario usuario = null;
         Anuncio anuncio = null;
-        switch (obtenerOrden()) {
+        Comentario comentario = null;
+        switch (getOrden()) {
             /**
              * USUARIO
              */
             case Indicador.INSERTAR_USUARIO:
                 System.out.println("Servidor.Consola - Orden " + Indicador.INSERTAR_USUARIO);
-                usuario = getUsuario(usuario, clienteConectado);
+                usuario = getUsuario(usuario);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
                     refindCAD.insertarUsuario(usuario);
@@ -66,7 +69,7 @@ public class SesionServidor extends Thread {
              */
             case Indicador.ACTUALIZA_USUARIO:
                 System.out.println("Servidor.Consola - Orden " + Indicador.ACTUALIZA_USUARIO);
-                usuario = getUsuario(usuario, clienteConectado);
+                usuario = getUsuario(usuario);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
                     refindCAD.actualizarUsuario(usuario);
@@ -79,11 +82,11 @@ public class SesionServidor extends Thread {
             case Indicador.BUSCAR_USUARIO:
                 System.out.println("Servidor.Consola - Orden " + Indicador.BUSCAR_USUARIO);
                 //Obtengo objeto que me envia el cliente
-                usuario = getUsuario(usuario, clienteConectado);
+                usuario = getUsuario(usuario);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
                     usuario = refindCAD.obtenerUsuario(usuario);
-                    sendUsuario(usuario, clienteConectado);
+                    sendUsuario(usuario);
                 } catch (ExcepcionRefind eR) {
                     respuesta = eR.getMensajeUsuario();
                     System.err.println(eR.getMensajeAdmin());
@@ -97,15 +100,11 @@ public class SesionServidor extends Thread {
             case Indicador.OBTENER_ANUNCIO:
                 System.out.println("Servidor.Consola - Orden " + Indicador.OBTENER_ANUNCIO);
                 //Obtengo objeto que me envia el cliente (anuncio con el anuncio id)
-                anuncio = getAnuncio(anuncio, clienteConectado);
+                anuncio = getAnuncio(anuncio);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
-                    /**
-                     * Usando el id del anuncio obtengo todos sus datos (Anuncio
-                     * Categoria Usuario)
-                     */
                     anuncio = refindCAD.obtenerAnuncio(anuncio);
-                    sendAnuncio(anuncio, clienteConectado);
+                    sendAnuncio(anuncio);
                 } catch (ExcepcionRefind eR) {
                     respuesta = eR.getMensajeUsuario();
                     System.err.println(eR.getMensajeAdmin());
@@ -117,8 +116,10 @@ public class SesionServidor extends Thread {
                 System.out.println("Servidor.Consola - Orden " + Indicador.OBTENER_ANUNCIOS);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
-                    listaAnuncios = refindCAD.obtenerAnuncios();
-                    sendAnuncios(listaAnuncios, clienteConectado);
+                    Categoria categoria = new Categoria();
+                    categoria = getCategoria(categoria);
+                    listaAnuncios = refindCAD.obtenerAnuncios(categoria);
+                    sendAnuncios(listaAnuncios);
                 } catch (ExcepcionRefind eR) {
                     respuesta = eR.getMensajeUsuario();
                     System.err.println(eR.getMensajeAdmin());
@@ -133,14 +134,10 @@ public class SesionServidor extends Thread {
                 System.out.println("Servidor.Consola - Orden " + Indicador.OBTENER_CATEGORIAS);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
-                    /**
-                     * Usando el id del anuncio obtengo todos sus datos (Anuncio
-                     * Categoria Usuario)
-                     */
-                    //listaCategorias = refindCAD.obtenerCategorias();
-                    sendCategorias(listaCategorias, clienteConectado);
+                    listaCategorias = refindCAD.obtenerCategorias();
+                    sendCategorias(listaCategorias);
                 } catch (ExcepcionRefind eR) {
-                    respuesta = eR.getMensajeUsuario();
+                    //respuesta = eR.getMensajeUsuario();
                     System.err.println(eR.getMensajeAdmin());
                 }
                 //enviar mensaje final
@@ -153,12 +150,10 @@ public class SesionServidor extends Thread {
                 System.out.println("Servidor.Consola - Orden " + Indicador.INSERTAR_FAVORITO);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
-                    /**
-                     * Usando el id del anuncio obtengo todos sus datos (Anuncio
-                     * Categoria Usuario)
-                     */
-                    //listaCategorias = refindCAD.obtenerCategorias();
-                    sendCategorias(listaCategorias, clienteConectado);
+                    usuario = getUsuario(usuario);
+                    anuncio = getAnuncio(anuncio);
+                    refindCAD.insertarFavorito(usuario, anuncio);
+
                 } catch (ExcepcionRefind eR) {
                     respuesta = eR.getMensajeUsuario();
                     System.err.println(eR.getMensajeAdmin());
@@ -170,29 +165,23 @@ public class SesionServidor extends Thread {
                 System.out.println("Servidor.Consola - Orden " + Indicador.SABER_FAVORITO);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
-                    /**
-                     * Usando el id del anuncio obtengo todos sus datos (Anuncio
-                     * Categoria Usuario)
-                     */
-                    //listaCategorias = refindCAD.obtenerCategorias();
-                    sendCategorias(listaCategorias, clienteConectado);
+                    usuario = getUsuario(usuario);
+                    anuncio = getAnuncio(anuncio);
+                    refindCAD.comprobarFavorito(usuario, anuncio);
+
                 } catch (ExcepcionRefind eR) {
                     respuesta = eR.getMensajeUsuario();
                     System.err.println(eR.getMensajeAdmin());
                 }
-                //enviar mensaje final
-                enviarRespuesta(respuesta);
+                enviarRespuesta(respuesta);//En caso afirmativo se enviara el mensaje no modificado
                 break;
             case Indicador.OBTENER_FAVORITOS:
                 System.out.println("Servidor.Consola - Orden " + Indicador.OBTENER_FAVORITOS);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
-                    /**
-                     * Usando el id del anuncio obtengo todos sus datos (Anuncio
-                     * Categoria Usuario)
-                     */
-                    //listaCategorias = refindCAD.obtenerCategorias();
-                    sendCategorias(listaCategorias, clienteConectado);
+                    usuario = getUsuario(usuario);
+                    listaAnuncios = refindCAD.obtenerFavoritos(usuario);
+                    sendAnuncios(listaAnuncios);
                 } catch (ExcepcionRefind eR) {
                     respuesta = eR.getMensajeUsuario();
                     System.err.println(eR.getMensajeAdmin());
@@ -204,12 +193,9 @@ public class SesionServidor extends Thread {
                 System.out.println("Servidor.Consola - Orden " + Indicador.ELIMINAR_FAVORITO);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
-                    /**
-                     * Usando el id del anuncio obtengo todos sus datos (Anuncio
-                     * Categoria Usuario)
-                     */
-                    //listaCategorias = refindCAD.obtenerCategorias();
-                    sendCategorias(listaCategorias, clienteConectado);
+                    usuario = getUsuario(usuario);
+                    anuncio = getAnuncio(anuncio);
+                    refindCAD.eliminarFavorito(usuario, anuncio);
                 } catch (ExcepcionRefind eR) {
                     respuesta = eR.getMensajeUsuario();
                     System.err.println(eR.getMensajeAdmin());
@@ -224,12 +210,9 @@ public class SesionServidor extends Thread {
                 System.out.println("Servidor.Consola - Orden " + Indicador.OBTENER_COMENTARIOS);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
-                    /**
-                     * Usando el id del anuncio obtengo todos sus datos (Anuncio
-                     * Categoria Usuario)
-                     */
-                    //listaCategorias = refindCAD.obtenerCategorias();
-                    sendCategorias(listaCategorias, clienteConectado);
+                    anuncio = getAnuncio(anuncio);
+                    listaComentarios = refindCAD.obtenerComentarios(anuncio);
+                    sendCategorias(listaCategorias);
                 } catch (ExcepcionRefind eR) {
                     respuesta = eR.getMensajeUsuario();
                     System.err.println(eR.getMensajeAdmin());
@@ -242,12 +225,9 @@ public class SesionServidor extends Thread {
                 System.out.println("Servidor.Consola - Orden " + Indicador.INSERTAR_COMENTARIO);
                 try {
                     RefindCAD refindCAD = new RefindCAD();
-                    /**
-                     * Usando el id del anuncio obtengo todos sus datos (Anuncio
-                     * Categoria Usuario)
-                     */
-                    //listaCategorias = refindCAD.obtenerCategorias();
-                    sendCategorias(listaCategorias, clienteConectado);
+                    comentario = getComentario(comentario);
+                    refindCAD.insertarComentario(comentario);
+
                 } catch (ExcepcionRefind eR) {
                     respuesta = eR.getMensajeUsuario();
                     System.err.println(eR.getMensajeAdmin());
@@ -259,7 +239,7 @@ public class SesionServidor extends Thread {
         System.out.println("Servidor.Consola - Cliente saliendo....");
     }
 
-    private Usuario getUsuario(Usuario usuario, Socket clienteConectado) {
+    private Usuario getUsuario(Usuario usuario) {//Quite el socket cliente
         try {
             ObjectInputStream recepcionObjeto = new ObjectInputStream(clienteConectado.getInputStream());
             usuario = (Usuario) recepcionObjeto.readObject();
@@ -271,7 +251,7 @@ public class SesionServidor extends Thread {
         return usuario;
     }
 
-    private Anuncio getAnuncio(Anuncio anuncio, Socket clienteConectado) {
+    private Anuncio getAnuncio(Anuncio anuncio) {
         try {
             ObjectInputStream recepcionObjeto = new ObjectInputStream(clienteConectado.getInputStream());
             anuncio = (Anuncio) recepcionObjeto.readObject();
@@ -283,12 +263,24 @@ public class SesionServidor extends Thread {
         return anuncio;
     }
 
+    private Comentario getComentario(Comentario comentario) {
+        try {
+            ObjectInputStream recepcionObjeto = new ObjectInputStream(clienteConectado.getInputStream());
+            comentario = (Comentario) recepcionObjeto.readObject();
+        } catch (IOException ex) {
+            Logger.getLogger(SesionServidor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(SesionServidor.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return comentario;
+    }
+
     /**
      * Metodo que recibe por un socket un String y reorna su valor
      *
      * @return
      */
-    private String obtenerOrden() {
+    private String getOrden() {
         String orden = "";
         InputStream is;
         DataInputStream obtengoOrden;
@@ -304,6 +296,18 @@ public class SesionServidor extends Thread {
         }
 
         return orden;
+    }
+
+    private Categoria getCategoria(Categoria categoria) {
+        try {
+            ObjectInputStream recepcionObjeto = new ObjectInputStream(clienteConectado.getInputStream());
+            categoria = (Categoria) recepcionObjeto.readObject();
+        } catch (IOException ex) {
+            Logger.getLogger(SesionServidor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(SesionServidor.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return categoria;
     }
 
     /**
@@ -324,7 +328,7 @@ public class SesionServidor extends Thread {
         }
     }
 
-    private String sendUsuario(Usuario usuario, Socket clienteConectado) {
+    private String sendUsuario(Usuario usuario) {
         try {
             ObjectOutputStream envioObjecto = new ObjectOutputStream(clienteConectado.getOutputStream());
             envioObjecto.writeObject(usuario);
@@ -335,7 +339,7 @@ public class SesionServidor extends Thread {
         return respuesta;
     }
 
-    private String sendAnuncio(Anuncio anuncio, Socket clienteConectado) {
+    private String sendAnuncio(Anuncio anuncio) {
         try {
             ObjectOutputStream envioObjecto = new ObjectOutputStream(clienteConectado.getOutputStream());
             envioObjecto.writeObject(anuncio);
@@ -346,7 +350,7 @@ public class SesionServidor extends Thread {
         return respuesta;
     }
 
-    private String sendAnuncios(ArrayList<Anuncio> listaAnuncios, Socket clienteConectado) {
+    private String sendAnuncios(ArrayList<Anuncio> listaAnuncios) {
         try {
             ObjectOutputStream envioObjecto = new ObjectOutputStream(clienteConectado.getOutputStream());
             envioObjecto.writeObject(listaAnuncios);
@@ -357,10 +361,21 @@ public class SesionServidor extends Thread {
         return respuesta;
     }
 
-    private String sendCategorias(ArrayList<Categoria> listaCategorias, Socket clienteConectado) {
+    private String sendCategorias(ArrayList<Categoria> listaCategorias) {
         try {
             ObjectOutputStream envioObjecto = new ObjectOutputStream(clienteConectado.getOutputStream());
             envioObjecto.writeObject(listaCategorias);
+        } catch (IOException io) {
+            respuesta = "Error al enviar objeto listaAnuncio - cambiar mensaje";
+            System.out.println(io.getMessage());
+        }
+        return respuesta;
+    }
+
+    private String sendComentarios(ArrayList<Comentario> listaComentario) {
+        try {
+            ObjectOutputStream envioObjecto = new ObjectOutputStream(clienteConectado.getOutputStream());
+            envioObjecto.writeObject(listaComentario);
         } catch (IOException io) {
             respuesta = "Error al enviar objeto listaAnuncio - cambiar mensaje";
             System.out.println(io.getMessage());
