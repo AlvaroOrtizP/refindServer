@@ -5,11 +5,6 @@
  */
 package refindserver;
 
-import Controlador.RefindCAD;
-import POJOS.ExcepcionRefind;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  *
  * @author Alvaro
